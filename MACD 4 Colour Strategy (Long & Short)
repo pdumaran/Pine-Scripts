@@ -1,0 +1,37 @@
+//@version=5
+strategy("MACD 4 Colour Strategy (Long & Short)", overlay=false, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+
+// ===== INPUTS =====
+fastMA = input.int(12, "Fast moving average", minval=7)
+slowMA = input.int(26, "Slow moving average", minval=7)
+signalMA = 9
+
+// ===== MACD =====
+[currMacd, _, _] = ta.macd(close, fastMA, slowMA, signalMA)
+[prevMacd, _, _] = ta.macd(close[1], fastMA, slowMA, signalMA)
+
+// ===== COLOR LOGIC =====
+plotColor = currMacd > 0 ? currMacd > prevMacd ? color.lime : color.green : currMacd < prevMacd ? color.maroon : color.red
+
+// ===== PLOTS =====
+plot(currMacd, style=plot.style_histogram, color=plotColor, linewidth=3)
+plot(0, "Zero line", color=color.gray)
+
+// ===== STRATEGY LOGIC =====
+longCondition = currMacd > 0 and currMacd > prevMacd
+shortCondition = currMacd < 0 and currMacd < prevMacd
+
+exitLong = currMacd < prevMacd or currMacd < 0
+exitShort = currMacd > prevMacd or currMacd > 0
+
+if longCondition
+    strategy.entry("Long", strategy.long)
+
+if shortCondition
+    strategy.entry("Short", strategy.short)
+
+if exitLong
+    strategy.close("Long")
+
+if exitShort
+    strategy.close("Short")
