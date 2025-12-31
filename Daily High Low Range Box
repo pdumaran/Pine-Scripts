@@ -1,0 +1,50 @@
+//@version=5
+indicator("Daily Range Box + EMAs", overlay=true)
+
+// --- Inputs: Daily Box ---
+showHigh  = input.bool(true, "Show Daily High Line", group="Daily Box Settings")
+showLow   = input.bool(true, "Show Daily Low Line", group="Daily Box Settings")
+highColor = input.color(color.red, "High Line Color", group="Daily Box Style")
+lowColor  = input.color(color.green, "Low Line Color", group="Daily Box Style")
+opacity   = input.int(85, "Box Transparency (0-100)", minval=0, maxval=100, group="Daily Box Style")
+
+// --- Inputs: EMAs ---
+showEMAs = input.bool(true, "Show EMAs", group="EMA Settings")
+ema50Len  = input.int(50, "EMA 50 Length", group="EMA Settings")
+ema100Len = input.int(100, "EMA 100 Length", group="EMA Settings")
+ema200Len = input.int(200, "EMA 200 Length", group="EMA Settings")
+
+ema50Col  = input.color(color.yellow, "EMA 50 Color", group="EMA Style")
+ema100Col = input.color(color.orange, "EMA 100 Color", group="EMA Style")
+ema200Col = input.color(color.purple, "EMA 200 Color", group="EMA Style")
+
+// --- Logic: Daily Box ---
+[dHigh, dLow, dOpen, dClose] = request.security(syminfo.tickerid, "D", [high, low, open, close], lookahead=barmerge.lookahead_on)
+
+isBullish = dClose >= dOpen
+boxColor = isBullish ? color.new(color.green, opacity) : color.new(color.red, opacity)
+
+var box dailyBox = na
+if timeframe.change("D")
+    dailyBox := box.new(left=bar_index, top=dHigh, right=bar_index, bottom=dLow, 
+                         bgcolor=boxColor, border_color=color.new(color.white, 100))
+else
+    box.set_right(dailyBox, bar_index)
+    box.set_top(dailyBox, dHigh)
+    box.set_bottom(dailyBox, dLow)
+    box.set_bgcolor(dailyBox, boxColor)
+
+// --- Logic: EMAs ---
+ema50  = ta.ema(close, ema50Len)
+ema100 = ta.ema(close, ema100Len)
+ema200 = ta.ema(close, ema200Len)
+
+// --- Plotting ---
+// Daily High/Low Lines
+plot(showHigh ? dHigh : na, "Daily High", color=highColor, linewidth=1, style=plot.style_stepline)
+plot(showLow ? dLow : na, "Daily Low", color=lowColor, linewidth=1, style=plot.style_stepline)
+
+// EMA Lines
+plot(showEMAs ? ema50 : na, "EMA 50", color=ema50Col, linewidth=1)
+plot(showEMAs ? ema100 : na, "EMA 100", color=ema100Col, linewidth=1)
+plot(showEMAs ? ema200 : na, "EMA 200", color=ema200Col, linewidth=2)
