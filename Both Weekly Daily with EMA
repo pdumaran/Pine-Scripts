@@ -1,0 +1,76 @@
+//@version=5
+indicator("Daily & Weekly Range + EMAs", overlay=true)
+
+// --- Inputs: Weekly Box ---
+showWBox  = input.bool(true, "Show Weekly Box", group="Weekly Settings")
+showWHigh = input.bool(true, "Show Weekly High Line", group="Weekly Settings")
+showWLow  = input.bool(true, "Show Weekly Low Line", group="Weekly Settings")
+wHighCol  = input.color(color.red, "Weekly High Color", group="Weekly Style")
+wLowCol   = input.color(color.green, "Weekly Low Color", group="Weekly Style")
+wOpacity  = input.int(90, "Weekly Box Transparency", minval=0, maxval=100, group="Weekly Style")
+
+// --- Inputs: Daily Box ---
+showDBox  = input.bool(true, "Show Daily Box", group="Daily Settings")
+showDHigh = input.bool(true, "Show Daily High Line", group="Daily Settings")
+showDLow  = input.bool(true, "Show Daily Low Line", group="Daily Settings")
+dHighCol  = input.color(color.gray, "Daily High Color", group="Daily Style")
+dLowCol   = input.color(color.gray, "Daily Low Color", group="Daily Style")
+dOpacity  = input.int(90, "Daily Box Transparency", minval=0, maxval=100, group="Daily Style")
+
+// --- Inputs: EMAs ---
+showEMAs  = input.bool(true, "Show EMAs", group="EMA Settings")
+ema50Len  = input.int(50, "EMA 50 Length", group="EMA Settings")
+ema100Len = input.int(100, "EMA 100 Length", group="EMA Settings")
+ema200Len = input.int(200, "EMA 200 Length", group="EMA Settings")
+ema50Col  = input.color(color.orange, "EMA 50 Color", group="EMA Style")
+ema100Col = input.color(color.blue, "EMA 100 Color", group="EMA Style")
+ema200Col = input.color(color.black, "EMA 200 Color", group="EMA Style")
+
+// --- Logic: Security Calls ---
+[wHigh, wLow, wOpen, wClose] = request.security(syminfo.tickerid, "W", [high, low, open, close], lookahead=barmerge.lookahead_on)
+[dHigh, dLow, dOpen, dClose] = request.security(syminfo.tickerid, "D", [high, low, open, close], lookahead=barmerge.lookahead_on)
+
+// --- Logic: Weekly Box ---
+wIsBullish = wClose >= wOpen
+wBoxColor = wIsBullish ? color.new(color.green, wOpacity) : color.new(color.red, wOpacity)
+
+var box weeklyBox = na
+if timeframe.change("W") and showWBox
+    weeklyBox := box.new(left=bar_index, top=wHigh, right=bar_index, bottom=wLow, bgcolor=wBoxColor, border_color=color.new(color.white, 100))
+else
+    box.set_right(weeklyBox, bar_index)
+    box.set_top(weeklyBox, wHigh)
+    box.set_bottom(weeklyBox, wLow)
+    box.set_bgcolor(weeklyBox, wBoxColor)
+
+// --- Logic: Daily Box ---
+dIsBullish = dClose >= dOpen
+dBoxColor = dIsBullish ? color.new(color.green, dOpacity) : color.new(color.red, dOpacity)
+
+var box dailyBox = na
+if timeframe.change("D") and showDBox
+    dailyBox := box.new(left=bar_index, top=dHigh, right=bar_index, bottom=dLow, bgcolor=dBoxColor, border_color=color.new(color.white, 100))
+else
+    box.set_right(dailyBox, bar_index)
+    box.set_top(dailyBox, dHigh)
+    box.set_bottom(dailyBox, dLow)
+    box.set_bgcolor(dailyBox, dBoxColor)
+
+// --- Logic: EMAs ---
+ema50  = ta.ema(close, ema50Len)
+ema100 = ta.ema(close, ema100Len)
+ema200 = ta.ema(close, ema200Len)
+
+// --- Plotting ---
+// Weekly High/Low (Thicker Lines)
+plot(showWHigh ? wHigh : na, "Weekly High", color=wHighCol, linewidth=2, style=plot.style_stepline)
+plot(showWLow ? wLow : na, "Weekly Low", color=wLowCol, linewidth=2, style=plot.style_stepline)
+
+// Daily High/Low (Thinner Lines)
+plot(showDHigh ? dHigh : na, "Daily High", color=dHighCol, linewidth=1, style=plot.style_stepline)
+plot(showDLow ? dLow : na, "Daily Low", color=dLowCol, linewidth=1, style=plot.style_stepline)
+
+// EMA Lines
+plot(showEMAs ? ema50 : na, "EMA 50", color=ema50Col, linewidth=1)
+plot(showEMAs ? ema100 : na, "EMA 100", color=ema100Col, linewidth=1)
+plot(showEMAs ? ema200 : na, "EMA 200", color=ema200Col, linewidth=2)
