@@ -1,0 +1,33 @@
+//@version=5
+indicator(title="4 Colour MACD + ATR", shorttitle="MACD4CATR", overlay=false)
+
+// --- MACD Inputs ---
+fastMA      = input.int(12, title="Fast moving average", minval=7)
+slowMA      = input.int(26, title="Slow moving average", minval=7)
+signalLen   = input.int(9, title="Signal Smoothing", minval=1)
+
+// --- ATR Inputs ---
+atrLength   = input.int(14, title="ATR Length", minval=1)
+showAtr     = input.bool(true, title="Show ATR Line")
+atrColor    = input.color(color.new(color.white, 0), title="ATR Line Color")
+
+// --- MACD Calculations ---
+[currMacd, _, _] = ta.macd(close, fastMA, slowMA, signalLen)
+prevMacd = currMacd[1]
+
+// --- MACD 4-Color Logic (Fixed Indentation) ---
+plotColor = currMacd > 0 ? 
+     (currMacd > prevMacd ? color.lime : color.green) : 
+     (currMacd < prevMacd ? color.maroon : color.red)
+
+// --- ATR Calculation ---
+atrValue = ta.atr(atrLength)
+
+// --- Plotting ---
+// Plot MACD Histogram
+plot(currMacd, title="MACD Histogram", style=plot.style_histogram, color=plotColor, linewidth=3)
+hline(0, "Zero Line", color=color.gray, linestyle=hline.style_dotted)
+
+// Plot ATR
+// Note: ATR and MACD scales differ; they will share the pane but use the same Y-axis scale.
+plot(showAtr ? atrValue : na, title="ATR Line", color=atrColor, linewidth=2)
