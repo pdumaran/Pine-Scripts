@@ -35,7 +35,7 @@ price15 = close
 // but we capture the 'live' state of the 1D and 1W candles at that moment.
 if barstate.isconfirmed
     log.info("--------------------------------------------------")
-    log.info("CLOSED 15M candle added: Price: {0} | Candle Color: {1} | MACD bar added. Color: {2} | MACD Val: {3} | ATR: {4}", price15, c15Col, m15Col, m15, atr15)
+    log.info("CLOSED 15M candle added at {0} | Candle Color: {1} | MACD bar added: {2} | MACD Val: {3} | ATR: {4}", price15, c15Col, m15Col, m15, atr15)
     log.info("LIVE 1D: Candle Color: {0} | MACD Col: {1} | MACD Val: {2} | ATR: {3}", c1dCol, m1dCol, m1d, atr1d)
     log.info("LIVE 1W: Candle Color: {0} | MACD Col: {1} | MACD Val: {2} | ATR: {3}", c1wCol, m1wCol, m1w, atr1w)
 
