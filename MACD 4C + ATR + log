@@ -1,0 +1,45 @@
+//@version=5
+indicator(title="4 Colour MACD + ATR Logger", shorttitle="MACD_Log", overlay=false)
+
+// --- Inputs ---
+fastMA     = input.int(12, title="Fast MA")
+slowMA     = input.int(26, title="Slow MA")
+signalLen  = input.int(9, title="Signal Smoothing")
+atrLength  = input.int(14, title="ATR Length")
+
+// --- Function to get MACD and Color ---
+// Returns [MACD Value, Color String]
+getMacdData(f, s, sig) =>
+    [m, _, _] = ta.macd(close, f, s, sig)
+    mPrev = m[1]
+    cStr = m > 0 ? (m > mPrev ? "Bright Green" : "Dark Green") : (m < mPrev ? "Bright Red" : "Dark Red")
+    [m, cStr]
+
+// --- Function to get Candle Color ---
+getCandleColor() =>
+    close >= open ? "Green" : "Red"
+
+// --- Calculations for Current Timeframe (15M) ---
+[m15, m15Col] = getMacdData(fastMA, slowMA, signalLen)
+atr15 = ta.atr(atrLength)
+c15Col = getCandleColor()
+price15 = close
+
+// --- Request Higher Timeframe Data (Live/Unclosed) ---
+// We pull the current [0] bar values for "Live" status
+[m1d, m1dCol, atr1d, c1dCol] = request.security(syminfo.tickerid, "1D", [m15, m15Col, atr15, c15Col], lookahead=barmerge.lookahead_on)
+[m1w, m1wCol, atr1w, c1wCol] = request.security(syminfo.tickerid, "1W", [m15, m15Col, atr15, c15Col], lookahead=barmerge.lookahead_on)
+
+// --- Logging Logic ---
+// We only log when a 15M bar closes to avoid spamming every tick, 
+// but we capture the 'live' state of the 1D and 1W candles at that moment.
+if barstate.isconfirmed
+    log.info("--------------------------------------------------")
+    log.info("CLOSED 15M: Price: {0} | Color: {1} | MACD Col: {2} | MACD Val: {3} | ATR: {4}", price15, c15Col, m15Col, m15, atr15)
+    log.info("LIVE 1D: Color: {0} | MACD Col: {1} | MACD Val: {2} | ATR: {3}", c1dCol, m1dCol, m1d, atr1d)
+    log.info("LIVE 1W: Color: {0} | MACD Col: {1} | MACD Val: {2} | ATR: {3}", c1wCol, m1wCol, m1w, atr1w)
+
+// --- Visual Plots (Standard MACD) ---
+plotColor = m15 > 0 ? (m15 > m15[1] ? color.lime : color.green) : (m15 < m15[1] ? color.maroon : color.red)
+plot(m15, style=plot.style_histogram, color=plotColor, linewidth=3)
+plot(atr15, color=color.white, title="15M ATR")
