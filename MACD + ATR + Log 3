@@ -30,16 +30,15 @@ l15 = low
 c15 = close
 
 // --- Request Higher Timeframe Data ---
-// We add the OHLC values into the security tuple
 [m1d, m1dCol, atr1d, c1dCol, o1d, h1d, l1d, c1d] = request.security(syminfo.tickerid, "1D", [m15, m15Col, atr15, c15Col, open, high, low, close], lookahead=barmerge.lookahead_on)
 [m1w, m1wCol, atr1w, c1wCol, o1w, h1w, l1w, c1w] = request.security(syminfo.tickerid, "1W", [m15, m15Col, atr15, c15Col, open, high, low, close], lookahead=barmerge.lookahead_on)
 
 // --- Logging Logic ---
 if barstate.isconfirmed
     log.info("--------------------------------------------------")
-    log.info("15M Candle | O: {0} H: {1} L: {2} C: {3} | Candle Color: {4} | MACD: {5} ({6}) | ATR: {7}", o15, h15, l15, c15, c15Col, m15, m15Col, atr15)
-    log.info(" 1D Candle | O: {0} H: {1} L: {2} C: {3} | Candle Color: {4} | MACD: {5} ({6}) | ATR: {7}", o1d, h1d, l1d, c1d, c1dCol, m1d, m1dCol, atr1d)
-    log.info(" 1W Candle | O: {0} H: {1} L: {2} C: {3} | Candle Color: {4} | MACD: {5} ({6}) | ATR: {7}", o1w, h1w, l1w, c1w, c1wCol, m1w, m1wCol, atr1w)
+    log.info("PAIR: {0} | 15M | O: {1} H: {2} L: {3} C: {4} | Candle Color: {5} | MACD: {6} ({7}) | ATR: {8}", syminfo.tickerid, o15, h15, l15, c15, c15Col, m15, m15Col, atr15)
+    log.info("PAIR: {0} | 1D  | O: {1} H: {2} L: {3} C: {4} | Candle Color: {5} | MACD: {6} ({7}) | ATR: {8}", syminfo.tickerid, o1d, h1d, l1d, c1d, c1dCol, m1d, m1dCol, atr1d)
+    log.info("PAIR: {0} | 1W  | O: {1} H: {2} L: {3} C: {4} | Candle Color: {5} | MACD: {6} ({7}) | ATR: {8}", syminfo.tickerid, o1w, h1w, l1w, c1w, c1wCol, m1w, m1wCol, atr1w)
 
 // --- Visual Plots ---
 plotColor = m15 > 0 ? (m15 > m15[1] ? color.lime : color.green) : (m15 < m15[1] ? color.maroon : color.red)
