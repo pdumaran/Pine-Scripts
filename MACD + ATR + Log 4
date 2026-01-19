@@ -1,0 +1,51 @@
+//@version=5
+indicator(title="4 Colour MACD + ATR Logger", shorttitle="MACD", overlay=false)
+
+// --- Inputs ---
+fastMA     = input.int(12, title="Fast MA")
+slowMA     = input.int(26, title="Slow MA")
+signalLen  = input.int(9, title="Signal Smoothing")
+atrLength  = input.int(14, title="ATR Length")
+
+// --- Function to get MACD and Color ---
+getMacdData(f, s, sig) =>
+    [m, _, _] = ta.macd(close, f, s, sig)
+    mPrev = m[1]
+    cStr = m > 0 ? (m > mPrev ? "Bright Green" : "Dark Green") : (m < mPrev ? "Bright Red" : "Dark Red")
+    [m, cStr]
+
+// --- Function to get Candle Color ---
+getCandleColor() =>
+    close >= open ? "Green" : "Red"
+
+// --- Calculations for Current Timeframe (15M) ---
+[m15, m15Col] = getMacdData(fastMA, slowMA, signalLen)
+atr15 = ta.atr(atrLength)
+c15Col = getCandleColor()
+
+// Define OHLC for 15M
+o15 = open
+h15 = high
+l15 = low
+c15 = close
+
+// --- Request Higher Timeframe Data ---
+// Added 1H and 4H requests
+[m1h, m1hCol, atr1h, c1hCol, o1h, h1h, l1h, c1h] = request.security(syminfo.tickerid, "60", [m15, m15Col, atr15, c15Col, open, high, low, close], lookahead=barmerge.lookahead_on)
+[m4h, m4hCol, atr4h, c4hCol, o4h, h4h, l4h, c4h] = request.security(syminfo.tickerid, "240", [m15, m15Col, atr15, c15Col, open, high, low, close], lookahead=barmerge.lookahead_on)
+[m1d, m1dCol, atr1d, c1dCol, o1d, h1d, l1d, c1d] = request.security(syminfo.tickerid, "1D", [m15, m15Col, atr15, c15Col, open, high, low, close], lookahead=barmerge.lookahead_on)
+[m1w, m1wCol, atr1w, c1wCol, o1w, h1w, l1w, c1w] = request.security(syminfo.tickerid, "1W", [m15, m15Col, atr15, c15Col, open, high, low, close], lookahead=barmerge.lookahead_on)
+
+// --- Logging Logic ---
+if barstate.isconfirmed
+    log.info("--------------------------------------------------")
+    log.info("PAIR: {0} | 15M | O: {1} H: {2} L: {3} C: {4} | Candle Color: {5} | MACD: {6} ({7}) | ATR: {8}", syminfo.tickerid, o15, h15, l15, c15, c15Col, m15, m15Col, atr15)
+    log.info("PAIR: {0} | 1H  | O: {1} H: {2} L: {3} C: {4} | Candle Color: {5} | MACD: {6} ({7}) | ATR: {8}", syminfo.tickerid, o1h, h1h, l1h, c1h, c1hCol, m1h, m1hCol, atr1h)
+    log.info("PAIR: {0} | 4H  | O: {1} H: {2} L: {3} C: {4} | Candle Color: {5} | MACD: {6} ({7}) | ATR: {8}", syminfo.tickerid, o4h, h4h, l4h, c4h, c4hCol, m4h, m4hCol, atr4h)
+    log.info("PAIR: {0} | 1D  | O: {1} H: {2} L: {3} C: {4} | Candle Color: {5} | MACD: {6} ({7}) | ATR: {8}", syminfo.tickerid, o1d, h1d, l1d, c1d, c1dCol, m1d, m1dCol, atr1d)
+    log.info("PAIR: {0} | 1W  | O: {1} H: {2} L: {3} C: {4} | Candle Color: {5} | MACD: {6} ({7}) | ATR: {8}", syminfo.tickerid, o1w, h1w, l1w, c1w, c1wCol, m1w, m1wCol, atr1w)
+
+// --- Visual Plots ---
+plotColor = m15 > 0 ? (m15 > m15[1] ? color.lime : color.green) : (m15 < m15[1] ? color.maroon : color.red)
+plot(m15, style=plot.style_histogram, color=plotColor, linewidth=3)
+plot(atr15, color=color.white, title="15M ATR")
