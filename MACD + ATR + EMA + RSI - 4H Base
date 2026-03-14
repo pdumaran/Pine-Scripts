@@ -19,37 +19,35 @@ getMacdData(f, s, sig) =>
 getCandleColor() =>
     close >= open ? "Green" : "Red"
 
-// --- Calculations for Base Timeframe (Now 4H) ---
-// When you put this on a 4H chart, these variables represent 4H data
-[m4h_base, m4hCol_base] = getMacdData(fastMA, slowMA, signalLen)
-atr4h_base = ta.atr(atrLength)
-rsi4h_base = ta.rsi(close, rsiLength)
-c4hCol_base = getCandleColor()
+// --- Calculations ---
+[m_base, mCol_base] = getMacdData(fastMA, slowMA, signalLen)
+atr_base = ta.atr(atrLength)
+rsi_base = ta.rsi(close, rsiLength)
+cCol_base = getCandleColor()
 
-ema50_4h_base  = ta.ema(close, 50)
-ema100_4h_base = ta.ema(close, 100)
-ema200_4h_base = ta.ema(close, 200)
-
-o4h_base = open
-h4h_base = high
-l4h_base = low
-c4h_base = close
+// EMA Calculations
+ema50_base  = ta.ema(close, 50)
+ema100_base = ta.ema(close, 100)
+ema200_base = ta.ema(close, 200)
 
 // --- Request Higher Timeframe Data ---
-// We use the 4H base calculations to fetch Daily, Weekly, and Monthly equivalents
-[m1d, m1dCol, atr1d, c1dCol, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, rsi1d] = request.security(syminfo.tickerid, "1D", [m4h_base, m4hCol_base, atr4h_base, c4hCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
-[m1w, m1wCol, atr1w, c1wCol, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, rsi1w] = request.security(syminfo.tickerid, "1W", [m4h_base, m4hCol_base, atr4h_base, c4hCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
-[m1m, m1mCol, atr1m, c1mCol, o1m, h1m, l1m, c1m, e50_1m, e100_1m, e200_1m, rsi1m] = request.security(syminfo.tickerid, "1M", [m4h_base, m4hCol_base, atr4h_base, c4hCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+[m4h, m4hCol, atr4h, c4hCol, o4h, h4h, l4h, c4h, e50_4h, e100_4h, e200_4h, rsi4h] = request.security(syminfo.tickerid, "240", [m_base, mCol_base, atr_base, cCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+[m1d, m1dCol, atr1d, c1dCol, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, rsi1d] = request.security(syminfo.tickerid, "1D", [m_base, mCol_base, atr_base, cCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+[m1w, m1wCol, atr1w, c1wCol, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, rsi1w] = request.security(syminfo.tickerid, "1W", [m_base, mCol_base, atr_base, cCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+[m1m, m1mCol, atr1m, c1mCol, o1m, h1m, l1m, c1m, e50_1m, e100_1m, e200_1m, rsi1m] = request.security(syminfo.tickerid, "1M", [m_base, mCol_base, atr_base, cCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
 
-// --- Logging Logic (Triggers every 4H bar) ---
-if barstate.isconfirmed
+// --- Logging Logic (Trigger: Every 4 Hours) ---
+// 14400000ms = 4 hours
+is_4h_boundary = (time % 14400000 == 0)
+
+if barstate.isconfirmed and is_4h_boundary
     log.info("------------------------- 4 HOUR UPDATE -------------------------")
-    log.info("PAIR: {0} | 4H  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o4h_base, h4h_base, l4h_base, c4h_base, ema50_4h_base, ema100_4h_base, ema200_4h_base, m4h_base, m4hCol_base, atr4h_base, rsi4h_base)
+    log.info("PAIR: {0} | 4H  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o4h, h4h, l4h, c4h, e50_4h, e100_4h, e200_4h, m4h, m4hCol, atr4h, rsi4h)
     log.info("PAIR: {0} | 1D  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, m1d, m1dCol, atr1d, rsi1d)
     log.info("PAIR: {0} | 1W  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, m1w, m1wCol, atr1w, rsi1w)
     log.info("PAIR: {0} | 1M  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1m, h1m, l1m, c1m, e50_1m, e100_1m, e200_1m, m1m, m1mCol, atr1m, rsi1m)
 
-// --- Visual Plots (Now displaying 4H MACD) ---
-plotColor = m4h_base > 0 ? (m4h_base > m4h_base[1] ? color.lime : color.green) : (m4h_base < m4h_base[1] ? color.maroon : color.red)
-plot(m4h_base, style=plot.style_histogram, color=plotColor, linewidth=3)
-plot(atr4h_base, color=color.white, title="4H ATR")
+// --- Visual Plots ---
+plotColor = m_base > 0 ? (m_base > m_base[1] ? color.lime : color.green) : (m_base < m_base[1] ? color.maroon : color.red)
+plot(m_base, style=plot.style_histogram, color=plotColor, linewidth=3)
+plot(atr_base, color=color.white, title="ATR")
