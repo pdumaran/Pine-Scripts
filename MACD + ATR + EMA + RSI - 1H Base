@@ -1,0 +1,59 @@
+//@version=5
+indicator(title="4 Colour MACD + ATR Logger + EMA + RSI - 1H Base", shorttitle="MACD_RSI_1H", overlay=false)
+
+// --- Inputs ---
+fastMA     = input.int(12, title="Fast MA")
+slowMA     = input.int(26, title="Slow MA")
+signalLen  = input.int(9, title="Signal Smoothing")
+atrLength  = input.int(14, title="ATR Length")
+rsiLength  = input.int(14, title="RSI Length")
+
+// --- Function to get MACD and Color ---
+getMacdData(f, s, sig) =>
+    [m, _, _] = ta.macd(close, f, s, sig)
+    mPrev = m[1]
+    cStr = m > 0 ? (m > mPrev ? "Bright Green" : "Dark Green") : (m < mPrev ? "Bright Red" : "Dark Red")
+    [m, cStr]
+
+// --- Function to get Candle Color ---
+getCandleColor() =>
+    close >= open ? "Green" : "Red"
+
+// --- Calculations for Base Timeframe (Now 1H) ---
+[m1h_base, m1hCol_base] = getMacdData(fastMA, slowMA, signalLen)
+atr1h_base = ta.atr(atrLength)
+rsi1h_base = ta.rsi(close, rsiLength)
+c1hCol_base = getCandleColor()
+
+// EMA Calculations for 1H
+ema50_1h_base  = ta.ema(close, 50)
+ema100_1h_base = ta.ema(close, 100)
+ema200_1h_base = ta.ema(close, 200)
+
+// Define OHLC for 1H
+o1h_base = open
+h1h_base = high
+l1h_base = low
+c1h_base = close
+
+// --- Request Higher Timeframe Data ---
+[m4h, m4hCol, atr4h, c4hCol, o4h, h4h, l4h, c4h, e50_4h, e100_4h, e200_4h, rsi4h] = request.security(syminfo.tickerid, "240", [m1h_base, m1hCol_base, atr1h_base, c1hCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+[m1d, m1dCol, atr1d, c1dCol, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, rsi1d] = request.security(syminfo.tickerid, "1D", [m1h_base, m1hCol_base, atr1h_base, c1hCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+[m1w, m1wCol, atr1w, c1wCol, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, rsi1w] = request.security(syminfo.tickerid, "1W", [m1h_base, m1hCol_base, atr1h_base, c1hCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+
+// New: Request 1 Month Data
+[m1m, m1mCol, atr1m, c1mCol, o1m, h1m, l1m, c1m, e50_1m, e100_1m, e200_1m, rsi1m] = request.security(syminfo.tickerid, "1M", [m1h_base, m1hCol_base, atr1h_base, c1hCol_base, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+
+// --- Logging Logic (Triggers every 1H bar) ---
+if barstate.isconfirmed
+    log.info("------------------------- 1 HOUR UPDATE -------------------------")
+    log.info("PAIR: {0} | 1H  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1h_base, h1h_base, l1h_base, c1h_base, ema50_1h_base, ema100_1h_base, ema200_1h_base, m1h_base, m1hCol_base, atr1h_base, rsi1h_base)
+    log.info("PAIR: {0} | 4H  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o4h, h4h, l4h, c4h, e50_4h, e100_4h, e200_4h, m4h, m4hCol, atr4h, rsi4h)
+    log.info("PAIR: {0} | 1D  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, m1d, m1dCol, atr1d, rsi1d)
+    log.info("PAIR: {0} | 1W  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, m1w, m1wCol, atr1w, rsi1w)
+    log.info("PAIR: {0} | 1M  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1m, h1m, l1m, c1m, e50_1m, e100_1m, e200_1m, m1m, m1mCol, atr1m, rsi1m)
+
+// --- Visual Plots (Now displaying 1H MACD) ---
+plotColor = m1h_base > 0 ? (m1h_base > m1h_base[1] ? color.lime : color.green) : (m1h_base < m1h_base[1] ? color.maroon : color.red)
+plot(m1h_base, style=plot.style_histogram, color=plotColor, linewidth=3)
+plot(atr1h_base, color=color.white, title="1H ATR")
