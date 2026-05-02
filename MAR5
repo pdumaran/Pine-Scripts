@@ -58,7 +58,9 @@ if barstate.isconfirmed
 // --- Visual Plots (Based on 5M) ---
 plotColor = m5 > 0 ? (m5 > m5[1] ? color.lime : color.green) : (m5 < m5[1] ? color.maroon : color.red)
 plot(m5, style=plot.style_histogram, color=plotColor, linewidth=3)
-plot(atr5, color=color.white, title="5M ATR")
+
+// Modified ATR Plot: 'display' set to show data without rendering the line
+plot(atr5, color=color.white, title="5M ATR", display=display.status_line + display.data_window)
 
 // --- RSI Value Display (Invisible Plot) ---
 plot(rsi5, title="5M RSI Value", color=color.new(color.white, 100), display=display.status_line + display.data_window)
