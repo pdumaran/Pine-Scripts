@@ -1,0 +1,64 @@
+//@version=5
+indicator(title="4 Colour MACD + ATR Logger + EMA + RSI (5M Focus)", shorttitle="MAR5", overlay=false)
+
+// --- Inputs ---
+fastMA     = input.int(12, title="Fast MA")
+slowMA     = input.int(26, title="Slow MA")
+signalLen  = input.int(9, title="Signal Smoothing")
+atrLength  = input.int(14, title="ATR Length")
+rsiLength  = input.int(14, title="RSI Length")
+
+// --- Function to get MACD and Color ---
+getMacdData(f, s, sig) =>
+    [m, _, _] = ta.macd(close, f, s, sig)
+    mPrev = m[1]
+    cStr = m > 0 ? (m > mPrev ? "Bright Green" : "Dark Green") : (m < mPrev ? "Bright Red" : "Dark Red")
+    [m, cStr]
+
+// --- Function to get Candle Color ---
+getCandleColor() =>
+    close >= open ? "Green" : "Red"
+
+// --- Calculations for Current Timeframe (Set chart to 5M) ---
+[m5, m5Col] = getMacdData(fastMA, slowMA, signalLen)
+atr5 = ta.atr(atrLength)
+rsi5 = ta.rsi(close, rsiLength)
+c5Col = getCandleColor()
+
+ema50_5  = ta.ema(close, 50)
+ema100_5 = ta.ema(close, 100)
+ema200_5 = ta.ema(close, 200)
+
+o5 = open
+h5 = high
+l5 = low
+c5 = close
+
+// --- Request Higher Timeframe Data ---
+// Function wrapper for security calls to keep code clean
+getSecData(tf) =>
+    request.security(syminfo.tickerid, tf, [m5, m5Col, atr5, c5Col, open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength)], lookahead=barmerge.lookahead_on)
+
+[m15, m15Col, atr15, c15Col, o15, h15, l15, c15, e50_15, e100_15, e200_15, rsi15] = getSecData("15")
+[m1h, m1hCol, atr1h, c1hCol, o1h, h1h, l1h, c1h, e50_1h, e100_1h, e200_1h, rsi1h] = getSecData("60")
+[m4h, m4hCol, atr4h, c4hCol, o4h, h4h, l4h, c4h, e50_4h, e100_4h, e200_4h, rsi4h] = getSecData("240")
+[m1d, m1dCol, atr1d, c1dCol, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, rsi1d] = getSecData("1D")
+[m1w, m1wCol, atr1w, c1wCol, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, rsi1w] = getSecData("1W")
+
+// --- Logging Logic (Executes every 5 minutes if on a 5M chart) ---
+if barstate.isconfirmed
+    log.info("--------------------------------------------------")
+    log.info("PAIR: {0} | 5M  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o5, h5, l5, c5, ema50_5, ema100_5, ema200_5, m5, m5Col, atr5, rsi5)
+    log.info("PAIR: {0} | 15M | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o15, h15, l15, c15, e50_15, e100_15, e200_15, m15, m15Col, atr15, rsi15)
+    log.info("PAIR: {0} | 1H  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1h, h1h, l1h, c1h, e50_1h, e100_1h, e200_1h, m1h, m1hCol, atr1h, rsi1h)
+    log.info("PAIR: {0} | 4H  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o4h, h4h, l4h, c4h, e50_4h, e100_4h, e200_4h, m4h, m4hCol, atr4h, rsi4h)
+    log.info("PAIR: {0} | 1D  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, m1d, m1dCol, atr1d, rsi1d)
+    log.info("PAIR: {0} | 1W  | O: {1} H: {2} L: {3} C: {4} | EMA 50: {5} 100: {6} 200: {7} | MACD: {8} ({9}) | ATR: {10} | RSI: {11}", syminfo.tickerid, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, m1w, m1wCol, atr1w, rsi1w)
+
+// --- Visual Plots (Based on 5M) ---
+plotColor = m5 > 0 ? (m5 > m5[1] ? color.lime : color.green) : (m5 < m5[1] ? color.maroon : color.red)
+plot(m5, style=plot.style_histogram, color=plotColor, linewidth=3)
+plot(atr5, color=color.white, title="5M ATR")
+
+// --- RSI Value Display (Invisible Plot) ---
+plot(rsi5, title="5M RSI Value", color=color.new(color.white, 100), display=display.status_line + display.data_window)
