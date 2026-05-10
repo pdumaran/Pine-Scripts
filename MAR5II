@@ -1,0 +1,74 @@
+//@version=5
+indicator(title="MAR5 + Advanced Metrics (Clean Log)", shorttitle="MAR5II", overlay=false)
+
+// --- Inputs ---
+fastMA     = input.int(12, title="Fast MA")
+slowMA     = input.int(26, title="Slow MA")
+signalLen  = input.int(9, title="Signal Smoothing")
+atrLength  = input.int(14, title="ATR Length")
+rsiLength  = input.int(14, title="RSI Length")
+adxLength  = input.int(14, title="ADX Length")
+bbLength   = input.int(20, title="BB Length")
+bbMult     = input.float(2.0, title="BB Multiplier")
+
+// --- Function to get MACD and Color ---
+getMacdData(f, s, sig) =>
+    [m, _, _] = ta.macd(close, f, s, sig)
+    mPrev = m[1]
+    cStr = m > 0 ? (m > mPrev ? "Bright Green" : "Dark Green") : (m < mPrev ? "Bright Red" : "Dark Red")
+    [m, cStr]
+
+// --- Function to get Candle Color ---
+getCandleColor() =>
+    close >= open ? "Green" : "Red"
+
+// --- Additional Indicator Calculations (5M Focus) ---
+[m5, m5Col] = getMacdData(fastMA, slowMA, signalLen)
+atr5        = ta.atr(atrLength)
+rsi5        = ta.rsi(close, rsiLength)
+c5Col       = getCandleColor()
+ema50_5     = ta.ema(close, 50)
+ema100_5    = ta.ema(close, 100)
+ema200_5    = ta.ema(close, 200)
+
+vol5        = volume
+obv5        = ta.obv
+[_, _, adx5]= ta.dmi(adxLength, adxLength)
+[bbU5, _, bbL5] = ta.bb(close, bbLength, bbMult)
+
+o5 = open
+h5 = high
+l5 = low
+c5 = close
+
+// --- Ticker Isolation ---
+cleanTicker = syminfo.ticker // This removes "BINANCE:" and "PAIR:"
+
+// --- Request Higher Timeframe Data ---
+getSecData(tf) =>
+    [m, mc] = getMacdData(fastMA, slowMA, signalLen)
+    [_, _, adxVal] = ta.dmi(adxLength, adxLength)
+    [bu, _, bl] = ta.bb(close, bbLength, bbMult)
+    request.security(syminfo.tickerid, tf, [m, mc, ta.atr(atrLength), getCandleColor(), open, high, low, close, ta.ema(close, 50), ta.ema(close, 100), ta.ema(close, 200), ta.rsi(close, rsiLength), volume, ta.obv, adxVal, bu, bl], lookahead=barmerge.lookahead_on)
+
+[m15, m15Col, atr15, c15Col, o15, h15, l15, c15, e50_15, e100_15, e200_15, rsi15, vol15, obv15, adx15, bbU15, bbL15] = getSecData("15")
+[m1h, m1hCol, atr1h, c1hCol, o1h, h1h, l1h, c1h, e50_1h, e100_1h, e200_1h, rsi1h, vol1h, obv1h, adx1h, bbU1h, bbL1h] = getSecData("60")
+[m4h, m4hCol, atr4h, c4hCol, o4h, h4h, l4h, c4h, e50_4h, e100_4h, e200_4h, rsi4h, vol4h, obv4h, adx4h, bbU4h, bbL4h] = getSecData("240")
+[m1d, m1dCol, atr1d, c1dCol, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, rsi1d, vol1d, obv1d, adx1d, bbU1d, bbL1d] = getSecData("1D")
+[m1w, m1wCol, atr1w, c1wCol, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, rsi1w, vol1w, obv1w, adx1w, bbU1w, bbL1w] = getSecData("1W")
+
+// --- Logging Logic (Simplified Output) ---
+if barstate.isconfirmed
+    log.info("--------------------------------------------------")
+    log.info("{0}|5M|O:{1}H:{2}L:{3}C:{4}|EMA50:{5} 100:{6} 200:{7}|MACD:{8}({9})|ATR:{10}|RSI:{11}|VOL:{12} OBV:{13} ADX:{14} BB:{15}/{16}", cleanTicker, o5, h5, l5, c5, ema50_5, ema100_5, ema200_5, m5, m5Col, atr5, rsi5, vol5, obv5, adx5, bbU5, bbL5)
+    log.info("{0}|15M|O:{1}H:{2}L:{3}C:{4}|EMA50:{5} 100:{6} 200:{7}|MACD:{8}({9})|ATR:{10}|RSI:{11}|VOL:{12} OBV:{13} ADX:{14} BB:{15}/{16}", cleanTicker, o15, h15, l15, c15, e50_15, e100_15, e200_15, m15, m15Col, atr15, rsi15, vol15, obv15, adx15, bbU15, bbL15)
+    log.info("{0}|1H|O:{1}H:{2}L:{3}C:{4}|EMA50:{5} 100:{6} 200:{7}|MACD:{8}({9})|ATR:{10}|RSI:{11}|VOL:{12} OBV:{13} ADX:{14} BB:{15}/{16}", cleanTicker, o1h, h1h, l1h, c1h, e50_1h, e100_1h, e200_1h, m1h, m1hCol, atr1h, rsi1h, vol1h, obv1h, adx1h, bbU1h, bbL1h)
+    log.info("{0}|4H|O:{1}H:{2}L:{3}C:{4}|EMA50:{5} 100:{6} 200:{7}|MACD:{8}({9})|ATR:{10}|RSI:{11}|VOL:{12} OBV:{13} ADX:{14} BB:{15}/{16}", cleanTicker, o4h, h4h, l4h, c4h, e50_4h, e100_4h, e200_4h, m4h, m4hCol, atr4h, rsi4h, vol4h, obv4h, adx4h, bbU4h, bbL4h)
+    log.info("{0}|1D|O:{1}H:{2}L:{3}C:{4}|EMA50:{5} 100:{6} 200:{7}|MACD:{8}({9})|ATR:{10}|RSI:{11}|VOL:{12} OBV:{13} ADX:{14} BB:{15}/{16}", cleanTicker, o1d, h1d, l1d, c1d, e50_1d, e100_1d, e200_1d, m1d, m1dCol, atr1d, rsi1d, vol1d, obv1d, adx1d, bbU1d, bbL1d)
+    log.info("{0}|1W|O:{1}H:{2}L:{3}C:{4}|EMA50:{5} 100:{6} 200:{7}|MACD:{8}({9})|ATR:{10}|RSI:{11}|VOL:{12} OBV:{13} ADX:{14} BB:{15}/{16}", cleanTicker, o1w, h1w, l1w, c1w, e50_1w, e100_1w, e200_1w, m1w, m1wCol, atr1w, rsi1w, vol1w, obv1w, adx1w, bbU1w, bbL1w)
+
+// --- Visual Plots ---
+plotColor = m5 > 0 ? (m5 > m5[1] ? color.lime : color.green) : (m5 < m5[1] ? color.maroon : color.red)
+plot(m5, style=plot.style_histogram, color=plotColor, linewidth=3)
+plot(atr5, color=color.white, title="5M ATR", display=display.status_line + display.data_window)
+plot(rsi5, title="5M RSI Value", color=color.new(color.white, 100), display=display.status_line + display.data_window)
