@@ -1,2 +1,2 @@
 # Pine-Scripts
-# I used these pine scripts for forex trading on tradingview.
+# I created and used these pine scripts myself.
